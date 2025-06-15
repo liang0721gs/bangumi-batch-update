@@ -23,13 +23,38 @@
     'use strict';
 
     GM_addStyle(`
-        /* 修复音乐条目复选框位置问题 */
-        #browserItemList .item .info .batch-checkbox,
-        .browserItemList .item .info .batch-checkbox {
+        /* 修复所有条目复选框位置问题 */
+        .batch-checkbox-container {
+            position: relative;
+            display: inline-block;
             margin-right: 10px;
             vertical-align: middle;
         }
-        
+
+        .batch-checkbox {
+            cursor: pointer;
+            position: absolute;
+            top: 5px;
+            left: 5px;
+            z-index: 10;
+        }
+
+        /* 确保条目标题位置正确 */
+        .item h3, .item .subject_title {
+            position: relative;
+            padding-left: 25px !important;
+        }
+
+        /* 隐藏评论中的复选框 */
+        .comment .batch-checkbox-container {
+            display: none !important;
+        }
+
+        /* 确保条目主体中的复选框可见 */
+        .item > .batch-checkbox-container {
+            display: inline-block !important;
+        }
+
         #batch-edit-float-btn {
             position: fixed;
             bottom: 20px;
@@ -49,12 +74,12 @@
             justify-content: center;
             transition: all 0.3s;
         }
-        
+
         #batch-edit-float-btn:hover {
             background: #2980b9;
             transform: scale(1.1);
         }
-        
+
         /* 控制面板 */
         .batch-edit-container {
             position: fixed;
@@ -68,7 +93,7 @@
             padding: 20px;
             display: none;
         }
-        
+
         .batch-edit-header {
             display: flex;
             justify-content: space-between;
@@ -77,13 +102,13 @@
             padding-bottom: 10px;
             border-bottom: 1px solid #eee;
         }
-        
+
         .batch-edit-title {
             font-weight: bold;
             font-size: 16px;
             color: #2c3e50;
         }
-        
+
         .close-batch-panel {
             background: none;
             border: none;
@@ -91,7 +116,7 @@
             cursor: pointer;
             color: #7f8c8d;
         }
-        
+
         /* 分类控制 */
         .batch-controls {
             display: grid;
@@ -99,7 +124,7 @@
             gap: 12px;
             margin-bottom: 15px;
         }
-        
+
         .category-control label {
             display: block;
             margin-bottom: 5px;
@@ -107,7 +132,7 @@
             color: #34495e;
             font-weight: 500;
         }
-        
+
         .category-control select {
             width: 100%;
             padding: 8px;
@@ -116,7 +141,7 @@
             background: white;
             font-size: 13px;
         }
-        
+
         /* 按钮区域 */
         .batch-buttons {
             display: grid;
@@ -124,7 +149,7 @@
             gap: 10px;
             margin: 15px 0;
         }
-        
+
         .batch-button {
             padding: 10px;
             border: none;
@@ -139,28 +164,28 @@
             gap: 5px;
             transition: all 0.2s;
         }
-        
+
         .batch-button:hover {
             opacity: 0.9;
             transform: translateY(-2px);
         }
-        
+
         .batch-button.update {
             background: #2ecc71;
         }
-        
+
         .batch-button.delete {
             background: #e74c3c;
         }
-        
+
         .batch-button.select {
             background: #3498db;
         }
-        
+
         .batch-button.cancel {
             background: #95a5a6;
         }
-        
+
         /* 全选区域 */
         .select-all-container {
             display: flex;
@@ -169,7 +194,7 @@
             border-top: 1px dashed #ddd;
             margin-top: 10px;
         }
-        
+
         /* 处理中遮罩 */
         .batch-processing {
             position: fixed;
@@ -185,7 +210,7 @@
             color: white;
             flex-direction: column;
         }
-        
+
         .processing-spinner {
             border: 4px solid rgba(255,255,255,0.3);
             border-top: 4px solid #3498db;
@@ -195,19 +220,12 @@
             animation: spin 1s linear infinite;
             margin-bottom: 20px;
         }
-        
+
         @keyframes spin {
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
-        
-        /* 条目复选框 */
-        .batch-checkbox {
-            margin-right: 10px;
-            cursor: pointer;
-            vertical-align: middle;
-        }
-        
+
         /* 删除确认对话框 */
         .confirmation-dialog {
             position: fixed;
@@ -223,19 +241,19 @@
             width: 300px;
             text-align: center;
         }
-        
+
         .confirmation-text {
             margin-bottom: 20px;
             line-height: 1.5;
             color: #2c3e50;
         }
-        
+
         .confirmation-buttons {
             display: flex;
             justify-content: center;
             gap: 10px;
         }
-        
+
         .confirm-btn {
             padding: 8px 20px;
             border: none;
@@ -243,12 +261,12 @@
             cursor: pointer;
             font-weight: 500;
         }
-        
+
         .confirm-btn.yes {
             background: #e74c3c;
             color: white;
         }
-        
+
         .confirm-btn.no {
             background: #bdc3c7;
             color: #2c3e50;
@@ -375,7 +393,7 @@
                 <input type="checkbox" id="toggle-all">
                 <label for="toggle-all">全选本页</label>
             </div>
-        `; // 移除了 toggle-all 的默认选中状态
+        `;
         document.body.appendChild(panel);
 
         // 添加处理遮罩
@@ -409,52 +427,47 @@
         setupEventListeners();
     }
 
-    // 添加复选框到每个条目（修复音乐条目问题）
+    // 添加复选框到每个条目（正确区分条目和评论）
     function addCheckboxesToItems() {
-        const items = document.querySelectorAll('#browserItemList .item, .browserItemList .item');
+        // 选择所有顶级条目
+        const items = document.querySelectorAll('#browserItemList > .item, .browserItemList > .item');
+
+        // 先移除所有现有的脚本添加的复选框
+        const existingContainers = document.querySelectorAll('.batch-checkbox-container');
+        existingContainers.forEach(container => container.remove());
 
         items.forEach(item => {
-            // 检查是否已经添加了复选框
-            if (item.querySelector('.batch-checkbox')) return;
+            // 创建容器和复选框
+            const container = document.createElement('div');
+            container.className = 'batch-checkbox-container';
 
             const checkbox = document.createElement('input');
             checkbox.type = 'checkbox';
             checkbox.className = 'batch-checkbox';
-            // 修改：默认不选中
             checkbox.checked = false;
 
-            // 针对音乐条目的特殊处理
-            const isMusicItem = item.querySelector('.subject_type_3');
-            
-            if (isMusicItem) {
-                // 音乐条目 - 添加到 .info 容器内
-                const infoContainer = item.querySelector('.info');
-                if (infoContainer) {
-                    // 添加到标题之前
-                    const titleElement = infoContainer.querySelector('a, h3');
-                    if (titleElement) {
-                        infoContainer.insertBefore(checkbox, titleElement);
-                    } else {
-                        infoContainer.insertBefore(checkbox, infoContainer.firstChild);
-                    }
-                } else {
-                    // 如果没有 .info 容器，添加到整个条目的开头
-                    item.insertBefore(checkbox, item.firstChild);
-                }
+            container.appendChild(checkbox);
+
+            // 尝试找到标题元素 - 确保是条目标题而不是评论标题
+            let titleElement = item.querySelector(':scope > .inner > h3, :scope > .inner > .header > h3, :scope > .inner > .subject > .subject_title');
+
+            // 对于没有.inner容器的条目
+            if (!titleElement) {
+                titleElement = item.querySelector(':scope > h3, :scope > .header > h3, :scope > .subject_title');
+            }
+
+            // 对于音乐条目
+            if (!titleElement) {
+                titleElement = item.querySelector(':scope > .subject > .subject_title, :scope > .info > a');
+            }
+
+            if (titleElement) {
+                // 在标题前插入复选框容器
+                titleElement.parentNode.insertBefore(container, titleElement);
             } else {
-                // 非音乐条目 - 添加到标题前
-                const header = item.querySelector('h3');
-                if (header) {
-                    header.insertBefore(checkbox, header.firstChild);
-                } else {
-                    // 如果没有 h3 标题，尝试其他容器
-                    const titleContainer = item.querySelector('.header, .title, .subject_title');
-                    if (titleContainer) {
-                        titleContainer.insertBefore(checkbox, titleContainer.firstChild);
-                    } else {
-                        item.insertBefore(checkbox, item.firstChild);
-                    }
-                }
+                // 如果找不到标题元素，添加到条目开头
+                const innerContainer = item.querySelector('.inner') || item;
+                innerContainer.insertBefore(container, innerContainer.firstChild);
             }
         });
     }
@@ -574,7 +587,16 @@
             }
 
             const checkbox = selectedItems[processed];
-            const item = checkbox.closest('.item');
+            const container = checkbox.closest('.batch-checkbox-container');
+            const item = container ? container.closest('.item') : null;
+
+            if (!item) {
+                processed++;
+                processingText.textContent = `处理中: ${processed}/${total}`;
+                setTimeout(processNext, 100);
+                return;
+            }
+
             const type = getItemType(item);
 
             if (type && statusConfig[type] && statusConfig[type] !== '') {
@@ -670,12 +692,21 @@
             }
 
             const checkbox = selected[deleted];
-            const item = checkbox.closest('.item');
+            const container = checkbox.closest('.batch-checkbox-container');
+            const item = container ? container.closest('.item') : null;
+
+            if (!item) {
+                deleted++;
+                processingText.textContent = `删除中: ${deleted}/${total}`;
+                setTimeout(deleteNext, 100);
+                return;
+            }
+
             const removeForm = item.querySelector('form.remove');
-            
+
             if (removeForm) {
                 const formData = new FormData(removeForm);
-                
+
                 // 发送删除请求
                 fetch(removeForm.action, {
                     method: 'POST',
@@ -690,7 +721,7 @@
                         item.style.margin = '0';
                         item.style.overflow = 'hidden';
                         item.style.transition = 'all 0.3s';
-                        
+
                         setTimeout(() => {
                             item.remove();
                             deleted++;
