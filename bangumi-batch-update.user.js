@@ -23,6 +23,13 @@
     'use strict';
 
     GM_addStyle(`
+        /* 修复音乐条目复选框位置问题 */
+        #browserItemList .item .info .batch-checkbox,
+        .browserItemList .item .info .batch-checkbox {
+            margin-right: 10px;
+            vertical-align: middle;
+        }
+        
         #batch-edit-float-btn {
             position: fixed;
             bottom: 20px;
@@ -198,6 +205,7 @@
         .batch-checkbox {
             margin-right: 10px;
             cursor: pointer;
+            vertical-align: middle;
         }
         
         /* 删除确认对话框 */
@@ -290,7 +298,7 @@
         // 添加浮动按钮
         const floatBtn = document.createElement('button');
         floatBtn.id = 'batch-edit-float-btn';
-        floatBtn.textContent = '批';
+        floatBtn.innerHTML = '<i class="fas fa-edit"></i>';
         floatBtn.title = '批量编辑条目状态';
         document.body.appendChild(floatBtn);
 
@@ -364,10 +372,10 @@
                 </button>
             </div>
             <div class="select-all-container">
-                <input type="checkbox" id="toggle-all" checked>
+                <input type="checkbox" id="toggle-all">
                 <label for="toggle-all">全选本页</label>
             </div>
-        `;
+        `; // 移除了 toggle-all 的默认选中状态
         document.body.appendChild(panel);
 
         // 添加处理遮罩
@@ -401,23 +409,52 @@
         setupEventListeners();
     }
 
-    // 添加复选框到每个条目
+    // 添加复选框到每个条目（修复音乐条目问题）
     function addCheckboxesToItems() {
         const items = document.querySelectorAll('#browserItemList .item, .browserItemList .item');
 
         items.forEach(item => {
+            // 检查是否已经添加了复选框
             if (item.querySelector('.batch-checkbox')) return;
 
             const checkbox = document.createElement('input');
             checkbox.type = 'checkbox';
             checkbox.className = 'batch-checkbox';
-            checkbox.checked = true;
+            // 修改：默认不选中
+            checkbox.checked = false;
 
-            const header = item.querySelector('h3');
-            if (header) {
-                header.insertBefore(checkbox, header.firstChild);
+            // 针对音乐条目的特殊处理
+            const isMusicItem = item.querySelector('.subject_type_3');
+            
+            if (isMusicItem) {
+                // 音乐条目 - 添加到 .info 容器内
+                const infoContainer = item.querySelector('.info');
+                if (infoContainer) {
+                    // 添加到标题之前
+                    const titleElement = infoContainer.querySelector('a, h3');
+                    if (titleElement) {
+                        infoContainer.insertBefore(checkbox, titleElement);
+                    } else {
+                        infoContainer.insertBefore(checkbox, infoContainer.firstChild);
+                    }
+                } else {
+                    // 如果没有 .info 容器，添加到整个条目的开头
+                    item.insertBefore(checkbox, item.firstChild);
+                }
             } else {
-                item.insertBefore(checkbox, item.firstChild);
+                // 非音乐条目 - 添加到标题前
+                const header = item.querySelector('h3');
+                if (header) {
+                    header.insertBefore(checkbox, header.firstChild);
+                } else {
+                    // 如果没有 h3 标题，尝试其他容器
+                    const titleContainer = item.querySelector('.header, .title, .subject_title');
+                    if (titleContainer) {
+                        titleContainer.insertBefore(checkbox, titleContainer.firstChild);
+                    } else {
+                        item.insertBefore(checkbox, item.firstChild);
+                    }
+                }
             }
         });
     }
