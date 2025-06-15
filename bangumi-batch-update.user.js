@@ -22,9 +22,7 @@
 (function() {
     'use strict';
 
-    // 添加CSS样式
     GM_addStyle(`
-        /* 浮动按钮样式 */
         #batch-edit-float-btn {
             position: fixed;
             bottom: 20px;
@@ -50,7 +48,7 @@
             transform: scale(1.1);
         }
         
-        /* 控制面板样式 */
+        /* 控制面板 */
         .batch-edit-container {
             position: fixed;
             bottom: 80px;
@@ -249,7 +247,6 @@
         }
     `);
 
-    // 状态映射表
     const STATUS_MAP = {
         'anime': {
             '想看': 'wish',
@@ -400,10 +397,7 @@
         `;
         document.body.appendChild(confirmation);
 
-        // 添加复选框到每个条目
         addCheckboxesToItems();
-
-        // 添加事件监听器
         setupEventListeners();
     }
 
@@ -412,7 +406,6 @@
         const items = document.querySelectorAll('#browserItemList .item, .browserItemList .item');
 
         items.forEach(item => {
-            // 防止重复添加
             if (item.querySelector('.batch-checkbox')) return;
 
             const checkbox = document.createElement('input');
@@ -483,7 +476,6 @@
         });
     }
 
-    // 获取条目类型
     function getItemType(item) {
         const typeIcon = item.querySelector('.collectInfo .tip');
         if (!typeIcon) return null;
@@ -679,7 +671,6 @@
                     setTimeout(deleteNext, 300);
                 });
             } else {
-                // 如果找不到删除表单，跳过此项
                 deleted++;
                 processingText.textContent = `删除中: ${deleted}/${total}`;
                 setTimeout(deleteNext, 100);
@@ -689,9 +680,7 @@
         deleteNext();
     }
 
-    // 等待页面加载完成后初始化
     window.addEventListener('load', function() {
-        // 确保页面是目录页面
         if (window.location.pathname.startsWith('/index/')) {
             createUI();
         }
