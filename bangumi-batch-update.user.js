@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Bangumi目录收藏状态批量修改工具
 // @namespace    https://github.com/liang0721gs/bangumi-batch-update
-// @version      1.5.0
+// @version      1.1.0
 // @description  在Bangumi目录页面批量修改动画、书籍、音乐等条目的收藏状态（含删除功能）
 // @author       liang0721gs
 // @homepage     https://github.com/liang0721gs/bangumi-batch-update
